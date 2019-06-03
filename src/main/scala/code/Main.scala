@@ -1,28 +1,45 @@
 package code
 
-object Program {
-  val passwords: Map[String, String] = Map(
-    "garfield"    -> "iheartlasagne",
-    "grumpycat"   -> "nope",
-    "snagglepuss" -> "murgatroyd",
-  )
+class Console {
+  def read(): String =
+    scala.Console.in.readLine
 
+  def write(str: String): Unit =
+    scala.Console.println(str)
+}
+
+class PasswordStore(var passwords: Map[String, String]) {
+  def check(username: String, password: String): Boolean =
+    passwords.get(username).fold(false)(_ == password)
+}
+
+class Program(console: Console, store: PasswordStore) {
   def run(): Option[String] = {
-    println("Enter your username")
-    val username = readLine
-    println("Enter your password")
-    val password = readLine
-    val loginOk = passwords.get(username).fold(false)(_ == password)
+    console.write("Enter your username")
+    val username = console.read()
+    console.write("Enter your password")
+    val password = console.read()
+    val loginOk = store.check(username, password)
     if(loginOk) {
-      println("Hello " + username)
+      console.write("Hello " + username)
       Some(username)
     } else {
-      println("Username or password incorrect")
+      console.write("Username or password incorrect")
       None
     }
   }
 }
 
 object Main extends App {
-  println(Program.run())
+  val console = new Console()
+
+  val store = new PasswordStore(Map(
+    "garfield"    -> "iheartlasagne",
+    "grumpycat"   -> "nope",
+    "snagglepuss" -> "murgatroyd",
+  ))
+
+  val program = new Program(console, store)
+
+  println(program.run())
 }
