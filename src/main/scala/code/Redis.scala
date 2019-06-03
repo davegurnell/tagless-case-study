@@ -9,6 +9,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 /** An extremely simple async Redis client
   * that operates on the default thread pool.
+  *
+  * You won't need this until relatively late on.
   */
 object Redis {
   private implicit val system = akka.actor.ActorSystem()
