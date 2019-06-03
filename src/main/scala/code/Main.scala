@@ -42,15 +42,19 @@ class Program[F[_]: Monad](console: Console[F], store: PasswordStore[F]) {
 }
 
 object Main extends App {
-  val console = new ScalaConsole[Id]()
+  import scala.concurrent._
+  import scala.concurrent.duration._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-  val store = new InMemoryPasswordStore[Id](Map(
+  val console = new ScalaConsole[Future]()
+
+  val store = new InMemoryPasswordStore[Future](Map(
     "garfield"    -> "iheartlasagne",
     "grumpycat"   -> "nope",
     "snagglepuss" -> "murgatroyd",
   ))
 
-  val program = new Program[Id](console, store)
+  val program = new Program[Future](console, store)
 
-  println(program.run())
+  println(Await.result(program.run(), Duration.Inf))
 }
