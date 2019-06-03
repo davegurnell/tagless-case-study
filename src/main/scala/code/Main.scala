@@ -1,11 +1,14 @@
 package code
 
-trait Console {
-  def read(): String
-  def write(str: String): Unit
+import cats.{Id, Monad}
+import cats.implicits._
+
+trait Console[F[_]] {
+  def read(): F[String]
+  def write(str: String): F[Unit]
 }
 
-class ScalaConsole extends Console {
+class ScalaConsole extends Console[Id] {
   def read(): String =
     scala.Console.in.readLine
 
@@ -13,30 +16,29 @@ class ScalaConsole extends Console {
     scala.Console.println(str)
 }
 
-trait PasswordStore {
-  def check(username: String, password: String): Boolean
+trait PasswordStore[F[_]] {
+  def check(username: String, password: String): F[Boolean]
 }
 
-class InMemoryPasswordStore(var passwords: Map[String, String]) extends PasswordStore {
+class InMemoryPasswordStore(var passwords: Map[String, String]) extends PasswordStore[Id] {
   def check(username: String, password: String): Boolean =
     passwords.get(username).fold(false)(_ == password)
 }
 
-class Program(console: Console, store: PasswordStore) {
-  def run(): Option[String] = {
-    console.write("Enter your username")
-    val username = console.read()
-    console.write("Enter your password")
-    val password = console.read()
-    val loginOk = store.check(username, password)
-    if(loginOk) {
-      console.write("Hello " + username)
-      Some(username)
-    } else {
-      console.write("Username or password incorrect")
-      None
-    }
-  }
+class Program[F[_]: Monad](console: Console[F], store: PasswordStore[F]) {
+  def run(): F[Option[String]] =
+    for {
+      _        <- console.write("Enter your username")
+      username <- console.read()
+      _        <- console.write("Enter your password")
+      password <- console.read()
+      loginOk  <- store.check(username, password)
+      result   <- if(loginOk) {
+                    console.write("Hello " + username)
+                  } else {
+                    console.write("Username or password incorrect")
+                  }
+    } yield if(loginOk) Some(username) else None
 }
 
 object Main extends App {
@@ -48,7 +50,7 @@ object Main extends App {
     "snagglepuss" -> "murgatroyd",
   ))
 
-  val program = new Program(console, store)
+  val program = new Program[Id](console, store)
 
   println(program.run())
 }
