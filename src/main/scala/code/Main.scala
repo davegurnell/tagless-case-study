@@ -2,6 +2,7 @@ package code
 
 import cats.{Id, Applicative, Monad}
 import cats.implicits._
+import scala.concurrent.{ExecutionContext, Future}
 
 trait Console[F[_]] {
   def read(): F[String]
@@ -25,6 +26,14 @@ class InMemoryPasswordStore[F[_]: Applicative](var passwords: Map[String, String
     passwords.get(username).fold(false)(_ == password).pure[F]
 }
 
+class RedisPasswordStore(implicit ec: ExecutionContext) extends PasswordStore[Future] {
+  def check(username: String, password: String): Future[Boolean] =
+    Redis.get(username).map {
+      case Some(pwd) => pwd == password
+      case None      => false
+    }
+}
+
 class Program[F[_]: Monad](console: Console[F], store: PasswordStore[F]) {
   def run(): F[Option[String]] =
     for {
@@ -46,15 +55,19 @@ object Main extends App {
   import scala.concurrent.duration._
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val console = new ScalaConsole[Future]()
-
-  val store = new InMemoryPasswordStore[Future](Map(
+  Redis.prepopulate(Map(
     "garfield"    -> "iheartlasagne",
     "grumpycat"   -> "nope",
     "snagglepuss" -> "murgatroyd",
   ))
 
+  val console = new ScalaConsole[Future]()
+
+  val store = new RedisPasswordStore()
+
   val program = new Program[Future](console, store)
 
   println(Await.result(program.run(), Duration.Inf))
+
+  Redis.close()
 }
