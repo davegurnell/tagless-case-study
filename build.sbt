@@ -31,5 +31,6 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % "1.4.0",
+  "com.github.etaty" %% "rediscala" % "1.8.0",
+  "org.typelevel"    %% "cats-core" % "1.4.0",
 )
