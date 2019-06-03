@@ -1,6 +1,6 @@
 package code
 
-import cats.{Id, Monad}
+import cats.{Id, Applicative, Monad}
 import cats.implicits._
 
 trait Console[F[_]] {
@@ -8,21 +8,21 @@ trait Console[F[_]] {
   def write(str: String): F[Unit]
 }
 
-class ScalaConsole extends Console[Id] {
-  def read(): String =
-    scala.Console.in.readLine
+class ScalaConsole[F[_]: Applicative] extends Console[F] {
+  def read(): F[String] =
+    scala.Console.in.readLine.pure[F]
 
-  def write(str: String): Unit =
-    scala.Console.println(str)
+  def write(str: String): F[Unit] =
+    scala.Console.println(str).pure[F]
 }
 
 trait PasswordStore[F[_]] {
   def check(username: String, password: String): F[Boolean]
 }
 
-class InMemoryPasswordStore(var passwords: Map[String, String]) extends PasswordStore[Id] {
-  def check(username: String, password: String): Boolean =
-    passwords.get(username).fold(false)(_ == password)
+class InMemoryPasswordStore[F[_]: Applicative](var passwords: Map[String, String]) extends PasswordStore[F] {
+  def check(username: String, password: String): F[Boolean] =
+    passwords.get(username).fold(false)(_ == password).pure[F]
 }
 
 class Program[F[_]: Monad](console: Console[F], store: PasswordStore[F]) {
@@ -42,9 +42,9 @@ class Program[F[_]: Monad](console: Console[F], store: PasswordStore[F]) {
 }
 
 object Main extends App {
-  val console = new ScalaConsole()
+  val console = new ScalaConsole[Id]()
 
-  val store = new InMemoryPasswordStore(Map(
+  val store = new InMemoryPasswordStore[Id](Map(
     "garfield"    -> "iheartlasagne",
     "grumpycat"   -> "nope",
     "snagglepuss" -> "murgatroyd",
