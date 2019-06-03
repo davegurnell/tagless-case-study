@@ -1,6 +1,11 @@
 package code
 
-class Console {
+trait Console {
+  def read(): String
+  def write(str: String): Unit
+}
+
+class ScalaConsole extends Console {
   def read(): String =
     scala.Console.in.readLine
 
@@ -8,7 +13,11 @@ class Console {
     scala.Console.println(str)
 }
 
-class PasswordStore(var passwords: Map[String, String]) {
+trait PasswordStore {
+  def check(username: String, password: String): Boolean
+}
+
+class InMemoryPasswordStore(var passwords: Map[String, String]) extends PasswordStore {
   def check(username: String, password: String): Boolean =
     passwords.get(username).fold(false)(_ == password)
 }
@@ -31,9 +40,9 @@ class Program(console: Console, store: PasswordStore) {
 }
 
 object Main extends App {
-  val console = new Console()
+  val console = new ScalaConsole()
 
-  val store = new PasswordStore(Map(
+  val store = new InMemoryPasswordStore(Map(
     "garfield"    -> "iheartlasagne",
     "grumpycat"   -> "nope",
     "snagglepuss" -> "murgatroyd",
